@@ -30,14 +30,6 @@ begin
 end;
 $$;
 
-create or replace function public.current_app_role()
-returns public.app_role
-language sql
-stable
-as $$
-  select role from public.profiles where id = auth.uid()
-$$;
-
 create table public.companies (
   id uuid primary key default gen_random_uuid(),
   legal_name text not null,
@@ -49,6 +41,14 @@ create table public.companies (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+create or replace function public.current_app_role()
+returns public.app_role
+language sql
+stable
+as $$
+  select role from public.profiles where id = auth.uid()
+$$;
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
