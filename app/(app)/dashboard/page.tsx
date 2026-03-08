@@ -10,7 +10,11 @@ import { formatCurrency, formatDate, formatMonth } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
-  const currentPayroll = data.payrollRuns[0];
+  const currentPayroll = data.payrollRuns[0] ?? null;
+  const payrollMonth = currentPayroll?.month ?? new Date().toISOString().slice(0, 7);
+  const payrollStatus = currentPayroll?.status ?? "draft";
+  const payrollEmployees = currentPayroll?.totalEmployees ?? data.employees.length;
+  const payrollNet = currentPayroll?.totalNet ?? 0;
 
   return (
     <div className="space-y-6">
@@ -18,7 +22,7 @@ export default async function DashboardPage() {
         eyebrow="Month-end workspace"
         title="Finish India month-end in one pass"
         description="The operator workflow stays focused: import the bank statement, clear review items, run payroll, export payslips, and send the CA package."
-        badge={currentPayroll.status}
+        badge={payrollStatus}
         actions={
           <>
             <Button variant="secondary">
@@ -26,7 +30,7 @@ export default async function DashboardPage() {
               Bank payment sheet
             </Button>
             <Button asChild>
-              <a href={`/api/exports/ca/${currentPayroll.month}`}>
+              <a href={`/api/exports/ca/${payrollMonth}`}>
                 <FileSpreadsheet className="h-4 w-4" />
                 Download CA export
               </a>
@@ -37,7 +41,7 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Main account balance" value={data.bankTransactions[0]?.balance ?? 0} delta="After latest reviewed transaction" />
-        <MetricCard label="Payroll net" value={currentPayroll.totalNet} delta={`${currentPayroll.totalEmployees} employees for ${formatMonth(currentPayroll.month)}`} />
+        <MetricCard label="Payroll net" value={payrollNet} delta={`${payrollEmployees} employees for ${formatMonth(payrollMonth)}`} />
         <MetricCard label="Pending review" value={data.bankTransactions.filter((txn) => txn.status === "unreviewed").length} delta="Transactions still needing operator review" />
         <MetricCard label="Invoice receipts" value={data.invoices.reduce((sum, invoice) => sum + invoice.grandTotal, 0)} delta="Registered customer invoices" />
       </section>
@@ -52,10 +56,10 @@ export default async function DashboardPage() {
             {[
               ["1. Import statement", `${data.bankImports[0]?.rowCount ?? 0} rows imported and deduplicated.`],
               ["2. Review transactions", `${data.bankTransactions.filter((txn) => txn.status !== "matched").length} rows need review or categorization.`],
-              ["3. Run payroll", `${currentPayroll.totalEmployees} employees in ${currentPayroll.status} state.`],
+              ["3. Run payroll", `${payrollEmployees} employees in ${payrollStatus} state.`],
               ["4. Generate payslips", `${data.payrollItems.length} payslips ready for download.`],
               ["5. Review expenses", `${data.vendors.length} vendors and freelancers with linked payouts.`],
-              ["6. Export CA pack", `ZIP package available for ${formatMonth(currentPayroll.month)}.`],
+              ["6. Export CA pack", `ZIP package available for ${formatMonth(payrollMonth)}.`],
             ].map(([title, description]) => (
               <div key={title} className="rounded-[24px] border border-border bg-surface-subtle p-5">
                 <p className="text-sm font-semibold text-ink">{title}</p>
@@ -75,7 +79,7 @@ export default async function DashboardPage() {
               <div key={transaction.id} className="flex items-center justify-between rounded-[22px] border border-border bg-surface-subtle p-4">
                 <div>
                   <p className="text-sm font-semibold text-ink">{transaction.counterpartyName ?? transaction.narration}</p>
-                  <p className="text-xs text-muted">{formatDate(transaction.postedAt)} • {transaction.type.replaceAll("_", " ")}</p>
+                  <p className="text-xs text-muted">{formatDate(transaction.postedAt)} | {transaction.type.replaceAll("_", " ")}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-medium text-ink">{transaction.direction === "credit" ? "+" : "-"}{formatCurrency(transaction.amount)}</p>
@@ -155,7 +159,7 @@ export default async function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-ink">Current payroll month</p>
-                  <p className="text-xs text-muted">{formatMonth(currentPayroll.month)}</p>
+                  <p className="text-xs text-muted">{formatMonth(payrollMonth)}</p>
                 </div>
               </div>
             </div>

@@ -12,7 +12,10 @@ const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
-    className={cn("flex h-11 w-full items-center justify-between rounded-2xl border border-border bg-white px-3.5 text-sm text-ink shadow-[0_1px_2px_rgba(16,24,40,0.04)] outline-none", className)}
+    className={cn(
+      "flex h-11 w-full items-center justify-between rounded-2xl border border-border/80 bg-white/72 px-3.5 text-sm text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_8px_18px_rgba(28,23,17,0.04)] outline-none transition focus:border-accent/40 focus:bg-white focus:ring-4 focus:ring-accent-softer",
+      className,
+    )}
     {...props}
   >
     {children}
@@ -29,7 +32,15 @@ const SelectContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Portal>
-    <SelectPrimitive.Content ref={ref} className={cn("z-50 overflow-hidden rounded-2xl border border-border bg-white p-1 shadow-elevated", className)} position="popper" {...props}>
+    <SelectPrimitive.Content
+      ref={ref}
+      className={cn(
+        "z-50 overflow-hidden rounded-[22px] border border-border/80 bg-[rgba(255,252,247,0.98)] p-1.5 shadow-elevated backdrop-blur-xl",
+        className,
+      )}
+      position="popper"
+      {...props}
+    >
       <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
@@ -43,7 +54,10 @@ const SelectItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
-    className={cn("relative flex cursor-default select-none items-center rounded-xl py-2 pl-8 pr-3 text-sm text-ink outline-none data-[highlighted]:bg-surface-subtle", className)}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-xl py-2.5 pl-8 pr-3 text-sm text-ink outline-none data-[highlighted]:bg-surface-subtle data-[highlighted]:text-ink",
+      className,
+    )}
     {...props}
   >
     <span className="absolute left-2.5 flex h-3.5 w-3.5 items-center justify-center">

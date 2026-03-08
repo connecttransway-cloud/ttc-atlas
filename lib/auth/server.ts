@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { redirect } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 import type { AppRole, Profile } from "@/lib/types/domain";
 
@@ -17,7 +17,9 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 
   if (!user) return null;
 
-  const { data: profile } = await db
+  const admin = ((await createServiceRoleClient()) ?? supabase) as any;
+
+  const { data: profile } = await admin
     .from("profiles")
     .select("id, full_name, email, role")
     .eq("id", user.id)

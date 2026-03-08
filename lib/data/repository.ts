@@ -2,7 +2,7 @@
 import { cache } from "react";
 import { endOfMonth, startOfMonth } from "date-fns";
 import { demoData } from "@/lib/data/demo-data";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 import type { Database } from "@/lib/types/database";
 import type { AuditLog, BankImportBatch, BankTransaction, Category, Company, DashboardData, DocumentRecord, Employee, Invoice, InvoiceLineItem, PayrollAdjustment, PayrollItem, PayrollRun, Profile, SalaryStructure, SavedRule, Vendor } from "@/lib/types/domain";
@@ -247,7 +247,9 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
   } = await db.auth.getUser();
   if (!user) return demoData;
 
-  const { data: profileRow } = await db.from("profiles").select("*").eq("id", user.id).maybeSingle();
+  const admin = ((await createServiceRoleClient()) ?? supabase) as any;
+
+  const { data: profileRow } = await admin.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (!profileRow) return demoData;
 
   const companyId = profileRow.company_id;
@@ -271,23 +273,23 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
     auditLogsResult,
     auditProfilesResult,
   ] = await Promise.all([
-    db.from("companies").select("*").eq("id", companyId).single(),
-    db.from("bank_accounts").select("*").eq("company_id", companyId).order("is_primary", { ascending: false }),
-    db.from("categories").select("*").eq("company_id", companyId).order("name"),
-    db.from("documents").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
-    db.from("bank_imports").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
-    db.from("bank_transactions").select("*").eq("company_id", companyId).order("posted_at", { ascending: false }),
-    db.from("employees").select("*").eq("company_id", companyId).is("deleted_at", null).order("full_name"),
-    db.from("salary_structures").select("*").eq("company_id", companyId).order("effective_date", { ascending: false }),
-    db.from("payroll_runs").select("*").eq("company_id", companyId).order("payroll_month", { ascending: false }),
-    db.from("payroll_items").select("*").eq("company_id", companyId).order("payroll_month", { ascending: false }),
-    db.from("payroll_adjustments").select("*").eq("company_id", companyId).order("payroll_month", { ascending: false }),
-    db.from("vendors").select("*").eq("company_id", companyId).is("deleted_at", null).order("name"),
-    db.from("invoices").select("*").eq("company_id", companyId).order("issue_date", { ascending: false }),
-    db.from("invoice_line_items").select("*").order("sort_order"),
-    db.from("saved_rules").select("*").eq("company_id", companyId).eq("active", true).order("priority"),
-    db.from("audit_logs").select("*").eq("company_id", companyId).order("created_at", { ascending: false }).limit(50),
-    db.from("profiles").select("id, full_name").eq("company_id", companyId),
+    admin.from("companies").select("*").eq("id", companyId).single(),
+    admin.from("bank_accounts").select("*").eq("company_id", companyId).order("is_primary", { ascending: false }),
+    admin.from("categories").select("*").eq("company_id", companyId).order("name"),
+    admin.from("documents").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
+    admin.from("bank_imports").select("*").eq("company_id", companyId).order("created_at", { ascending: false }),
+    admin.from("bank_transactions").select("*").eq("company_id", companyId).order("posted_at", { ascending: false }),
+    admin.from("employees").select("*").eq("company_id", companyId).is("deleted_at", null).order("full_name"),
+    admin.from("salary_structures").select("*").eq("company_id", companyId).order("effective_date", { ascending: false }),
+    admin.from("payroll_runs").select("*").eq("company_id", companyId).order("payroll_month", { ascending: false }),
+    admin.from("payroll_items").select("*").eq("company_id", companyId).order("payroll_month", { ascending: false }),
+    admin.from("payroll_adjustments").select("*").eq("company_id", companyId).order("payroll_month", { ascending: false }),
+    admin.from("vendors").select("*").eq("company_id", companyId).is("deleted_at", null).order("name"),
+    admin.from("invoices").select("*").eq("company_id", companyId).order("issue_date", { ascending: false }),
+    admin.from("invoice_line_items").select("*").order("sort_order"),
+    admin.from("saved_rules").select("*").eq("company_id", companyId).eq("active", true).order("priority"),
+    admin.from("audit_logs").select("*").eq("company_id", companyId).order("created_at", { ascending: false }).limit(50),
+    admin.from("profiles").select("id, full_name").eq("company_id", companyId),
   ]);
 
   const invoiceLineItemsByInvoice = new Map<string, InvoiceLineItem[]>();

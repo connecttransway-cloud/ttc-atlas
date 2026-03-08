@@ -24,6 +24,20 @@ export interface PayrollComputation {
   };
 }
 
+export interface PayrollValidationIssue {
+  employeeId: string;
+  employeeCode: string;
+  employeeName: string;
+  reason: "missing_salary_structure";
+}
+
+export class PayrollValidationError extends Error {
+  constructor(public readonly issues: PayrollValidationIssue[]) {
+    super(`Payroll validation failed for ${issues.map((issue) => issue.employeeCode).join(", ")}`);
+    this.name = "PayrollValidationError";
+  }
+}
+
 function daysInPayrollMonth(month: string) {
   const start = startOfMonth(parseISO(`${month}-01`));
   const end = endOfMonth(start);
@@ -43,16 +57,32 @@ function calculateApproximateTds(monthlyTaxablePay: number) {
   return toAmount(monthlyTaxablePay * 0.1);
 }
 
+function getActiveEmployeesForMonth(month: string, employees: Employee[]) {
+  return employees.filter((employee) => employee.status === "active" && employee.joinDate <= `${month}-31` && (!employee.leaveDate || employee.leaveDate >= `${month}-01`));
+}
+
+export function getPayrollValidationIssues(input: Pick<PayrollRunInput, "month" | "employees" | "salaryStructures">): PayrollValidationIssue[] {
+  return getActiveEmployeesForMonth(input.month, input.employees)
+    .filter((employee) => !getEffectiveStructure(employee.id, input.month, input.salaryStructures))
+    .map((employee) => ({
+      employeeId: employee.id,
+      employeeCode: employee.employeeCode,
+      employeeName: employee.fullName,
+      reason: "missing_salary_structure" as const,
+    }));
+}
+
 export function buildPayrollRun(input: PayrollRunInput): PayrollComputation {
   const monthDays = daysInPayrollMonth(input.month);
+  const issues = getPayrollValidationIssues(input);
 
-  const items = input.employees
-    .filter((employee) => employee.status === "active" && employee.joinDate <= `${input.month}-31` && (!employee.leaveDate || employee.leaveDate >= `${input.month}-01`))
+  if (issues.length > 0) {
+    throw new PayrollValidationError(issues);
+  }
+
+  const items = getActiveEmployeesForMonth(input.month, input.employees)
     .map((employee) => {
-      const structure = getEffectiveStructure(employee.id, input.month, input.salaryStructures);
-      if (!structure) {
-        throw new Error(`Missing salary structure for ${employee.employeeCode}`);
-      }
+      const structure = getEffectiveStructure(employee.id, input.month, input.salaryStructures)!;
 
       const attendance = input.attendance?.[employee.id] ?? { paidDays: monthDays, lopDays: 0 };
       const prorationFactor = attendance.paidDays / monthDays;

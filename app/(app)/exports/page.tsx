@@ -7,7 +7,7 @@ import { formatMonth } from "@/lib/utils";
 
 export default async function ExportsPage() {
   const data = await getDashboardData();
-  const month = data.payrollRuns[0]?.month ?? "2026-01";
+  const month = data.payrollRuns[0]?.month ?? new Date().toISOString().slice(0, 7);
 
   return (
     <div className="space-y-6">

@@ -7,7 +7,7 @@ import { lockPayrollRunAction, recalculatePayrollRunAction } from "@/app/actions
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 
-export function PayrollActions({ month, canLock }: { month: string; canLock: boolean }) {
+export function PayrollActions({ month, canLock, payrollReady = true }: { month: string; canLock: boolean; payrollReady?: boolean }) {
   const router = useRouter();
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
@@ -16,7 +16,7 @@ export function PayrollActions({ month, canLock }: { month: string; canLock: boo
     <>
       <Button
         variant="secondary"
-        disabled={isRecalculating || isLocking}
+        disabled={!payrollReady || isRecalculating || isLocking}
         onClick={() => {
           setIsRecalculating(true);
           startTransition(async () => {
@@ -41,7 +41,7 @@ export function PayrollActions({ month, canLock }: { month: string; canLock: boo
         </a>
       </Button>
       <Button
-        disabled={!canLock || isLocking || isRecalculating}
+        disabled={!payrollReady || !canLock || isLocking || isRecalculating}
         onClick={() => {
           setIsLocking(true);
           startTransition(async () => {

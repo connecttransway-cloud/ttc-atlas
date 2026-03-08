@@ -1,20 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --canvas: #f5f6f8;
-  --surface: #ffffff;
-  --surface-subtle: #fafafa;
-  --border: rgba(15, 23, 42, 0.08);
-  --border-strong: rgba(15, 23, 42, 0.14);
-  --muted: #667085;
-  --muted-foreground: #475467;
-  --ink: #101828;
-  --ink-soft: #344054;
-  --accent: #0f766e;
-  --accent-soft: rgba(15, 118, 110, 0.1);
-  --danger: #b42318;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 12px 30px rgba(15, 23, 42, 0.06);
+  --canvas: #f4efe8;
+  --surface: #fffdf9;
+  --surface-subtle: #f7f1e8;
+  --surface-strong: #f1e9dc;
+  --border: rgba(77, 65, 52, 0.14);
+  --border-strong: rgba(47, 40, 33, 0.24);
+  --muted: #857767;
+  --muted-foreground: #655a4e;
+  --ink: #17212b;
+  --ink-soft: #3a4652;
+  --accent: #1f6d68;
+  --accent-strong: #194f4b;
+  --accent-soft: rgba(31, 109, 104, 0.12);
+  --accent-softer: rgba(31, 109, 104, 0.06);
+  --success: #18755c;
+  --success-soft: rgba(24, 117, 92, 0.12);
+  --warning: #a76415;
+  --warning-soft: rgba(167, 100, 21, 0.12);
+  --danger: #b5523b;
+  --danger-soft: rgba(181, 82, 59, 0.12);
+  --shadow-sm: 0 12px 24px rgba(28, 23, 17, 0.05);
+  --shadow-md: 0 28px 60px rgba(26, 21, 16, 0.09);
   --radius: 20px;
 }
 
@@ -22,6 +30,7 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-subtle: var(--surface-subtle);
+  --color-surface-strong: var(--surface-strong);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
   --color-muted: var(--muted);
@@ -29,8 +38,15 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-softer: var(--accent-softer);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-manrope);
   --font-mono: var(--font-plex-mono);
 }
@@ -46,8 +62,9 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.05), transparent 24%),
-    linear-gradient(180deg, #fbfbfc 0%, #f5f6f8 100%);
+    radial-gradient(circle at top left, rgba(31, 109, 104, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(208, 170, 114, 0.14), transparent 26%),
+    linear-gradient(180deg, #fbf7f1 0%, #f4efe8 55%, #efe8de 100%);
   color: var(--ink);
 }
 
@@ -57,18 +74,25 @@ a {
 }
 
 ::selection {
-  background: rgba(15, 118, 110, 0.18);
+  background: rgba(31, 109, 104, 0.18);
 }
 
 .surface-panel {
-  background: rgba(255, 255, 255, 0.88);
+  background:
+    radial-gradient(circle at top, rgba(74, 92, 116, 0.18), transparent 35%),
+    linear-gradient(180deg, rgba(17, 23, 31, 0.98) 0%, rgba(24, 31, 41, 0.95) 100%);
   backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 30px 70px rgba(15, 19, 25, 0.28);
 }
 
 .surface-card {
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 252, 247, 0.96) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    var(--shadow-sm);
 }
 
 .shadow-elevated {
@@ -77,9 +101,16 @@ a {
 
 .grid-pattern {
   background-image:
-    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(23, 33, 43, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 33, 43, 0.04) 1px, transparent 1px);
   background-size: 32px 32px;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #17212b 0%, #385568 52%, #1f6d68 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .scrollbar-none {

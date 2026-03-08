@@ -88,6 +88,7 @@ export type EmployeeFormValues = z.infer<typeof employeeSchema>;
 export type VendorFormValues = z.infer<typeof vendorSchema>;
 export type InvoiceFormInput = z.input<typeof invoiceSchema>;
 export type InvoiceFormValues = z.output<typeof invoiceSchema>;
+export type SalaryStructureFormInput = z.input<typeof salaryStructureSchema>;
 export type SalaryStructureFormValues = z.infer<typeof salaryStructureSchema>;
 export type PayrollAdjustmentFormValues = z.infer<typeof payrollAdjustmentSchema>;
 export type BankImportFormInput = z.input<typeof bankImportSchema>;

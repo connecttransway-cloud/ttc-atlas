@@ -23,11 +23,14 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
-      className={cn("fixed left-1/2 top-1/2 z-50 grid w-[min(720px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[28px] border border-border bg-white p-6 shadow-elevated duration-200", className)}
+      className={cn(
+        "fixed left-1/2 top-1/2 z-50 grid w-[min(720px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[32px] border border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,251,246,0.98)_100%)] p-6 shadow-elevated duration-200",
+        className,
+      )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-5 top-5 rounded-full p-1 text-muted hover:bg-surface-subtle">
+      <DialogPrimitive.Close className="absolute right-5 top-5 rounded-full border border-border/70 bg-white/80 p-1.5 text-muted hover:bg-surface-subtle">
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>

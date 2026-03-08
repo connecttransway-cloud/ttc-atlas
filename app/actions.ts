@@ -2,9 +2,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { buildPayrollRun } from "@/lib/payroll/engine";
+import { buildPayrollRun, getPayrollValidationIssues, PayrollValidationError } from "@/lib/payroll/engine";
 import { parseBankStatement } from "@/lib/bank/parser";
-import { createServerSupabaseClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 import { assertRole, requireProfile } from "@/lib/auth/server";
 import { calculateInvoiceTotals, getDashboardData, monthBounds, payrollMonthToDate } from "@/lib/data/queries";
@@ -19,7 +19,7 @@ function maskAccountNumber(value: string) {
 }
 
 async function insertAuditLog(companyId: string, actorId: string, action: string, entityType: string, entityId: string, diffSummary: string, diff: Record<string, unknown>) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return;
   const db = supabase as any;
 
@@ -42,7 +42,7 @@ export async function saveEmployeeAction(values: EmployeeFormValues & { id?: str
   const parsed = employeeSchema.safeParse(values);
   if (!parsed.success) return { ok: false, message: "Invalid employee data." };
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
 
@@ -89,7 +89,7 @@ export async function saveSalaryStructureAction(employeeId: string, values: Sala
   const parsed = salaryStructureSchema.safeParse(values);
   if (!parsed.success) return { ok: false, message: "Invalid salary structure." };
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
   const { data: profileRow } = await db.from("profiles").select("company_id").eq("id", profile.id).single();
@@ -131,7 +131,7 @@ export async function saveVendorAction(values: VendorFormValues & { id?: string 
   const parsed = vendorSchema.safeParse(values);
   if (!parsed.success) return { ok: false, message: "Invalid vendor data." };
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
   const { data: profileRow } = await db.from("profiles").select("company_id").eq("id", profile.id).single();
@@ -171,7 +171,7 @@ export async function saveInvoiceAction(values: InvoiceFormValues & { id?: strin
   const parsed = invoiceSchema.safeParse(values);
   if (!parsed.success) return { ok: false, message: "Invalid invoice data." };
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
   const { data: profileRow } = await db.from("profiles").select("company_id").eq("id", profile.id).single();
@@ -246,7 +246,7 @@ export async function recalculatePayrollRunAction(month: string) {
   if (!profile || !hasSupabaseEnv()) return { ok: false, message: "Supabase is not configured." };
   assertRole(["admin", "payroll_operator"], profile.role);
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
   const { data: profileRow } = await db.from("profiles").select("company_id").eq("id", profile.id).single();
@@ -258,15 +258,38 @@ export async function recalculatePayrollRunAction(month: string) {
     return { ok: false, message: "Locked payroll month cannot be recalculated." };
   }
 
-  const computation = buildPayrollRun({
+  const validationIssues = getPayrollValidationIssues({
     month,
     employees: data.employees,
     salaryStructures: data.salaryStructures,
-    adjustments: data.payrollAdjustments.filter((entry) => entry.month === month),
-    attendance: Object.fromEntries(
-      data.payrollItems.filter((entry) => entry.month === month).map((entry) => [entry.employeeId, { paidDays: entry.paidDays, lopDays: entry.lopDays }]),
-    ),
   });
+  if (validationIssues.length > 0) {
+    return {
+      ok: false,
+      message: `Add salary structure for ${validationIssues.map((issue) => issue.employeeCode).join(", ")} before recalculating payroll.`,
+    };
+  }
+
+  let computation;
+  try {
+    computation = buildPayrollRun({
+      month,
+      employees: data.employees,
+      salaryStructures: data.salaryStructures,
+      adjustments: data.payrollAdjustments.filter((entry) => entry.month === month),
+      attendance: Object.fromEntries(
+        data.payrollItems.filter((entry) => entry.month === month).map((entry) => [entry.employeeId, { paidDays: entry.paidDays, lopDays: entry.lopDays }]),
+      ),
+    });
+  } catch (error) {
+    if (error instanceof PayrollValidationError) {
+      return {
+        ok: false,
+        message: `Add salary structure for ${error.issues.map((issue) => issue.employeeCode).join(", ")} before recalculating payroll.`,
+      };
+    }
+    throw error;
+  }
 
   const runPayload = {
     company_id: profileRow.company_id,
@@ -318,7 +341,7 @@ export async function lockPayrollRunAction(month: string) {
   if (!profile || !hasSupabaseEnv()) return { ok: false, message: "Supabase is not configured." };
   assertRole(["admin", "payroll_operator"], profile.role);
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
   const { data: profileRow } = await db.from("profiles").select("company_id").eq("id", profile.id).single();
@@ -349,7 +372,7 @@ export async function importBankStatementAction(params: {
   if (!profile || !hasSupabaseEnv()) return { ok: false, message: "Supabase is not configured." };
   assertRole(["admin", "finance_operator"], profile.role);
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createServiceRoleClient();
   if (!supabase) return { ok: false, message: "Supabase unavailable." };
   const db = supabase as any;
 
